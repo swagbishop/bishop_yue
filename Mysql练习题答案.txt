@@ -1,0 +1,180 @@
+上午计划：
+回顾知识点之前，结合老师开发经验，简单说一下公司工作时常用的数据库标识符命名规范，并在后面根据此规范进行回顾，练习。
+table:STU_xxxx, TEA_XXXX, SCH_xxxxx
+constraint:PK_TABLENAME_COLUMNNAME
+FK_
+CK_
+DF_
+VIEW :V_
+PROCEDURE:PRO_
+TRRIGER:TRG_
+
+
+1、回顾数据库、表、约束、索引基础知识
+
+2、学生做练习：
+如果NIIT数据库不存在，则创建NIIT数据库，数据库的字符集为UTF-8；
+create database if not exists niit
+character set utf8
+collate utf8_general_ci;
+
+如果数据库表stu不存在，则创建stu表，数据库引擎为innodb，表中字段信息为：
+rollno 学号列 主键列 自动增长
+stu_name 非空
+gender 默认为M
+tel 唯一
+
+create table if not exists stu 
+(
+rollno int primary key auto_increment,
+stu_name varchar(20) not null,
+gender char(1) default 'M',
+tel varchar(11) ,
+constraint uk_tel unique (tel)
+)
+engine=innodb;
+
+创建课程表course，表中字段信息如下所示：
+course_id 主键
+course_name
+create table if not exists course
+(
+course_id int not null,
+course_name varchar(20) not null,
+constraint pk primary key(course_id)
+)
+
+创建成绩表mark，表中字段信息如下所示：
+mark_id
+stu_id 外键
+course_id 外键
+score 
+create table if not exists marks
+(
+mark_id int not null,
+stu_id int,
+course_id int
+select * from information_schema.TABLE_CONSTRAINTS 
+where TABLE_NAME = 'marks';
+alter table marks add column score int;
+alter table marks add constraint pk_mark_id primary key(mark_id);
+alter table marks 
+add constraint fk_stu foreign key(stu_id) references stu(stu_id);
+alter table marks 
+add constraint fk_course foreign key(course_id) references course(course_id);
+
+stu表中插入5位学生记录，course表中插入3门课程记录，mark表中每个同学至少插入两门成绩。
+-- 建议使用存储过程插入
+
+3、回顾用户账户知识点
+
+4、学生练习：
+创建用户账户，用户名niit，可以访问任何主机，密码为niit，具有对NIIT数据库的 操作权限
+select * from mysql.user;
+create user 'niit' identified by 'niit';
+grant all on niit.* to 'niit';
+show grants for 'niit'; 
+
+
+5、回顾数据查询，联接和子查询
+
+下午计划：
+6、学生做练习：
+（1）查询有考试成绩的学生的学号，姓名和考试成绩
+select student.rollno, name, rdbms, math
+from  student join marks on	student.rollno = marks.rollno;
+（2）查询所有学生所有课程的学号，姓名，课程，考试成绩，若没有考试成绩，则显示NULL值
+select s.rollno, name ,rdbms, math
+from student s left outer join marks m on s.rollno = m.rollno;
+（3）查询获得最高分的学生的学号，姓名
+-- 把上面三个查询使用嵌套子查询合并为一个查询
+select rollno, name from student where rollno in  -- 根据分学号获取姓名
+(select rollno from marks where score = -- 根据最高分查询获得最高分的学生学号
+(select max(score) from marks)  -- 查询最高分
+);
+（4）查询每门课程最高分的学生信息
+--查询每门课程最高分的成绩信息
+select * from mark w where score = 
+(select max(score) from mark i where i.course_id = w.course_id);
+/*
+关联子查询
+首先取出外部查询第一条记录：
+2，2，22，,100 ，将'22'带入到子查询中，子查询变成:
+select max(score) from mark i where i.course_id = 22，
+然后执行子查询，查询出该种课程的最高分为'100'。
+然后外部查询第一条数据是否进行展示，就会变成where条件是否成立：
+2，2，22，,100 二者相等就进行展示，!=就不显示
+*/
+
+select *
+from
+stu s,
+mark m,
+(select m.course_id,max(m.score) as score
+from stu s
+	right join mark m
+		on s.rollno = m.stu_id
+group by m.course_id) r
+where s.rollno=m.stu_id and m.course_id=r.course_id and r.score=m.score;
+
+7、结合sqlserver讲解select语句各子句的执行顺序
+
+8、回顾复合语句，存储例程，触发器
+
+9、学生练习：
+（1）创建一个存储过程，根据学生学号，显示学生平均成绩所对应的等级：85以上显示优秀，70分-80分，显示良好，60-70分显示一般，60分一下显示不及格；
+调用此存储过程，查询一个学生的平均分等级。
+delimiter //
+create procedure proc_rank (in m int)
+begin
+declare s float;
+declare r varchar(8);
+select avg(score) into s from mark where stu_id=m;
+if s<60 then
+	set r='不及格';
+else if s between 60 and 70 then
+	set r='一般';
+else if s between 70 and 80 then
+	set r='良好';
+else
+	set r='优秀';
+    end if;
+    end if;
+end if;
+select r as '等级';
+end
+//
+delimiter ;
+
+call proc_rank(1);
+
+（2）创建一个函数，根据课程编号，显示该课程的平均分；
+调用此函数，获取一门课程的平均分
+set global log_bin_trust_function_creators=1;
+delimiter //
+create function func_avg(id int)
+returns float
+begin
+	declare result float;
+    set result =1;
+	select avg(score) into result from mark where course_id=id;
+return result;
+end
+//
+delimiter ;
+select func_avg(2) as '平均分';
+
+-- 调用函数
+select func_avg_scorel(1) as '平均分';
+
+（3）创建一个触发器，删除stu表中记录时，如果该学生在mark表有成绩，则不允许删除，撤销删除操作，并提示需要先删除成绩再删除学生。
+delimiter //
+create trigger trg_stu_del before delete on stu for each row
+begin
+	if exists (select 1 from mark where stu_id=old.rollno limit 1) then
+		signal sqlstate '45000'
+		set message_text='需要先删除成绩再删除学生';
+    end if;
+end
+//
+delimiter ;
