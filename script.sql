@@ -4,37 +4,34 @@ CREATE DATABASE IF NOT EXISTS NIIT DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 
 USE NIIT;
 
-CREATE TABLE IF NOT EXISTS `niit`.`stu` (
-  `rollno` INT NOT NULL AUTO_INCREMENT,
-  `stu_name` VARCHAR(45) NOT NULL,
-  `gender` VARCHAR(45) NOT NULL DEFAULT 'M',
-  `tel` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`rollno`))
+DROP DATABASE NIIT;
+
+CREATE TABLE IF NOT EXISTS stu (
+  rollno INT AUTO_INCREMENT primary key,
+  stu_name VARCHAR(45) NOT NULL,
+  gender VARCHAR(1) NOT NULL DEFAULT 'M',
+  tel VARCHAR(11)  unique)/*唯一约束可以有一个控制*/
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
-CREATE TABLE IF NOT EXISTS `niit`.`course` (
-  `course_id` INT NOT NULL,
-  `course_name` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`course_id`))
+CREATE TABLE IF NOT EXISTS course (
+  course_id INT primary key,
+  course_name VARCHAR(45) NOT NULL)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
-CREATE TABLE IF NOT EXISTS `niit`.`mark` (
-  `mark_id` INT NOT NULL,
-  `score` INT NOT NULL,
-  PRIMARY KEY (`mark_id`),
-  INDEX `score_idx` (`score` ASC),
-  CONSTRAINT `stu`
-    FOREIGN KEY (`mark_id`)
-    REFERENCES `niit`.`stu` (`rollno`),
-  CONSTRAINT `score`
-    FOREIGN KEY (`score`)
-    REFERENCES `niit`.`course` (`course_id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
 
-select * from course;
+create table if not exists mark (
+	mark_id int not null primary key,
+    rollno int,
+    course_id int,
+    score int,
+    constraint fk_rollno foreign key (rollno) references stu(rollno),
+    constraint fk_course_id foreign key (course_id) references course(course_id))
+    engine = InnoDB
+    default char set = utf8
+
+select * from mark;
 
 
 INSERT INTO stu ( rollno, stu_name, gender, tel )
@@ -49,10 +46,20 @@ INSERT INTO course ( course_id, course_name )
 VALUES
 (1,"Math" ),
 (2,"English" ),
-(3,"History" );
+(3,"JAVA" );
 
-/*INSERT INTO mark ( mark_id, score, rollno)
+INSERT INTO mark ( mark_id, rollno, course_id, score)
 VALUES
-*/
+(1, 1, 1, 85),
+(2, 1, 2, 75),
+(3, 2, 2, 65),
+(4, 2, 3, 95),
+(5, 3, 3, 87),
+(6, 3, 3, 87),
+(7, 4, 1, 90),
+(8, 4, 2, 79),
+(9, 5, 2, 92),
+(10, 5, 3, 83);
 
 /*2*/
+select * from mark;
